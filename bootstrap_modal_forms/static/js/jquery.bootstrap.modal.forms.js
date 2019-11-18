@@ -8,25 +8,42 @@ https://github.com/trco/django-bootstrap-modal-forms
 (function ($) {
 
     // Open modal & load the form at formURL to the modalContent element
-    var newForm = function (modalID, modalContent, modalForm, formURL, errorClass, submitBtn) {
+    var newForm = function (modalID, modalContent, modalForm, formURL, errorClass, submitBtn, submitBtnModalRedirect) {
         $(modalContent).load(formURL, function () {
             $(modalID).modal("show");
             $(modalForm).attr("action", formURL);
             // Add click listener to the submitBtn
-            ajaxSubmit(modalID, modalContent, modalForm, formURL, errorClass, submitBtn);
+            ajaxSubmit(modalID, modalContent, modalForm, formURL, errorClass, submitBtn, submitBtnModalRedirect);
         });
     };
 
     // Submit form callback function
-    var submitForm = function(modalForm) {
-      $(modalForm).submit();
-    }
+    var submitForm = function (modalID, modalContent, modalForm) {
+        $(modalForm).submit();
+    };
+
+    // Submit form callback function that redirects modal to success url
+    var submitFormModalRedirect = function (modalID, modalContent, modalForm) {
+        var xhr = new XMLHttpRequest();
+        xhr.open($(modalForm).attr("method"), $(modalForm).attr("action"));
+        xhr.onload = function (event) {
+            $(modalID).find(modalContent).html(event.target.response);
+        };
+
+        var formData = new FormData($(modalForm)[0]);
+        xhr.send(formData);
+    };
+
 
     // Add click listener to the submitBtn
-    var ajaxSubmit = function (modalID, modalContent, modalForm, formURL, errorClass, submitBtn) {
+    var ajaxSubmit = function (modalID, modalContent, modalForm, formURL, errorClass, submitBtn, submitBtnModalRedirect) {
         $(submitBtn).on("click", function () {
             // Check if form.is_valid() via ajax request when submitBtn is clicked
             isFormValid(modalID, modalContent, modalForm, formURL, errorClass, submitBtn, submitForm);
+        });
+		$(submitBtnModalRedirect).on("click", function () {
+            // Check if form.is_valid() via ajax request when submitBtnModalRedirect is clicked
+            isFormValid(modalID, modalContent, modalForm, formURL, errorClass, submitBtn, submitFormModalRedirect);
         });
     };
 
@@ -46,7 +63,7 @@ https://github.com/trco/django-bootstrap-modal-forms
                     ajaxSubmit(modalID, modalContent, modalForm, formURL, errorClass, submitBtn);
                 } else {
                     // Form is valid, submit it
-                    callback(modalForm);
+                    callback(modalID, modalContent, modalForm);
                 }
             }
         });
@@ -60,7 +77,8 @@ https://github.com/trco/django-bootstrap-modal-forms
             modalForm: ".modal-content form",
             formURL: null,
             errorClass: ".invalid",
-            submitBtn: ".submit-btn"
+            submitBtn: ".submit-btn",
+            submitBtnModalRedirect: ".submit-btn-modal-redirect"
         };
 
         // Extend default settings with provided options
@@ -75,7 +93,8 @@ https://github.com/trco/django-bootstrap-modal-forms
                     settings.modalForm,
                     settings.formURL,
                     settings.errorClass,
-                    settings.submitBtn);
+                    settings.submitBtn,
+                    settings.submitBtnModalRedirect);
             });
         });
     };
